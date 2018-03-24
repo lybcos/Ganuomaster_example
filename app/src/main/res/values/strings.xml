@@ -1,0 +1,25 @@
+<resources>
+    <string name="app_name">知乎日报</string>
+
+    <string name="exit_again">再按一次退出程序哦~</string>
+    <string name="zhihu_daily_today">今日之『知乎日报』|</string>
+    <string name="share_this_news">分享这个新闻</string>
+    <string name="news_preview_image">图片预览</string>
+    <string name="action_share_url">分享</string>
+    <string name="share_to">分享至…</string>
+    <string name="action_search">搜索</string>
+    //图片的后缀 则同一个图片key 得到不同的结果
+    <string name="image_suffix_general">_fw320sf</string>//普通浏览的图
+    <string name="image_suffix_big">_fw658</string>//大图
+    <string name="image_suffix_small">_sq75sf</string>//小图
+
+    <string-array name="tab_long_Title">
+        <item>首页</item>
+        <item>应用</item>
+        <item>游戏</item>
+        <item>专题</item>
+        <item>推荐</item>
+        <item>分类</item>
+        <item>排行</item>
+    </string-array>
+</resources>
