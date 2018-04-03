@@ -1,8 +1,10 @@
 package com.example.administrator.ganuo_master_example;
 
 import android.content.Context;
+import android.content.IntentFilter;
 import android.support.design.widget.NavigationView;
 import android.support.v4.app.FragmentTransaction;
+import android.support.v4.content.LocalBroadcastManager;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
 import android.view.Gravity;
@@ -26,10 +28,24 @@ public class MainActivity extends BaseActivity{
     private GanhuoFragment ganhuoFragment;
     private ZhiHuMainFragment zhiHuFragment;
     private HuaMainFragment huaBanFragment;
+    private IntentFilter intentFilter;
+    private NetWorkBroadcast  netWorkBroadcast;
+
 
     @Override
     public void loadViewLayout() {
+        intentFilter = new IntentFilter();
+        intentFilter.addAction("android.net.conn.CONNECTIVITY_CHANGE");
+        netWorkBroadcast=new NetWorkBroadcast();
+        registerReceiver(netWorkBroadcast,intentFilter);
+
         setContentView(R.layout.activity_main);
+    }
+
+    @Override
+    protected void onDestroy() {
+        super.onDestroy();
+        unregisterReceiver(netWorkBroadcast);
     }
 
     @Override

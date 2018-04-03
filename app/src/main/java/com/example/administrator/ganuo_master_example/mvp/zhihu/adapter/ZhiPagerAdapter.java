@@ -27,11 +27,10 @@ import java.util.Locale;
 
 public class ZhiPagerAdapter extends FragmentStatePagerAdapter {
 
-    private String[]mString={"首页", "应用","游戏","专题", "推荐", "分类", "排行"};
+//    private String[]mString={"首页", "应用","游戏","专题", "推荐", "分类", "排行"};
     @SuppressLint("ResourceType")
     public ZhiPagerAdapter(FragmentManager fm) {
         super(fm);
-//        mlist.add(MyApplication.getInstance().getString(R.array.tab_long_Title));
     }
 
     @Override
@@ -54,12 +53,8 @@ public class ZhiPagerAdapter extends FragmentStatePagerAdapter {
         Calendar calendar=Calendar.getInstance();//默认当前日期，获取一个Calendar对象
         calendar.add(Calendar.DAY_OF_YEAR,-position);
 
-//        return mlist.get(position);
-        if (MyApplication.getInstance() == null) {
-            Log.d("bjk", "这是空的");
-        }
-        return mString[position];
-//       return (position == 0 ? MyApplication.getInstance().getString(R.string.zhihu_daily_today) + " " : "")
-//               + DateFormat.getDateInstance().format(calendar.getTime());
+
+       return (position == 0 ? MyApplication.getInstance().getString(R.string.zhihu_daily_today) + " " : "")
+               + DateFormat.getDateInstance().format(calendar.getTime());
     }
 }

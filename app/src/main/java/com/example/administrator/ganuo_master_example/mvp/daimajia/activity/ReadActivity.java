@@ -14,6 +14,7 @@ import com.example.administrator.ganuo_master_example.mvp.daimajia.fragment.Read
 import com.example.administrator.ganuo_master_example.mvp.huaban.adapter.MyPagerAdapter;
 
 import java.util.ArrayList;
+import java.util.List;
 
 import cn.hugeterry.coordinatortablayout.CoordinatorTabLayout;
 
@@ -22,11 +23,12 @@ import cn.hugeterry.coordinatortablayout.CoordinatorTabLayout;
  */
 
 public class ReadActivity extends BaseActivity {
-        private CoordinatorTabLayout coordinatorTabLayout;
-        private ViewPager vp;
+    private CoordinatorTabLayout coordinatorTabLayout;
+    private ViewPager vp;
     private int[] mImageArray, mColorArray;
-    private ArrayList<Fragment> mFragments;
+    private List<Fragment> mFragments;
     private final String[] mTitles = {"Android", "iOS", "前端", "App","瞎推荐","拓展资源"};
+    private int numToSetCurrentItem = 0;
 
     @Override
     protected void loadViewLayout() {
@@ -34,6 +36,7 @@ public class ReadActivity extends BaseActivity {
         getWindow().setFlags(WindowManager.LayoutParams.FLAG_FULLSCREEN
         ,WindowManager.LayoutParams.FLAG_FULLSCREEN);
             setContentView(R.layout.activity_read);
+        numToSetCurrentItem = getIntent().getIntExtra("numToSetCurrentItem", 0);
     }
 
     @Override
@@ -68,7 +71,7 @@ public class ReadActivity extends BaseActivity {
                 .setImageArray(mImageArray,mColorArray)
                 .setupWithViewPager(vp);
         coordinatorTabLayout.getTabLayout().setTabMode(TabLayout.MODE_SCROLLABLE);
-
+        vp.setCurrentItem(numToSetCurrentItem);
     }
 
     @Override

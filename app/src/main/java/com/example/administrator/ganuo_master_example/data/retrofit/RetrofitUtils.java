@@ -30,7 +30,7 @@ public abstract class RetrofitUtils {
 
     public Retrofit getRetrofit(String baseUrl) {
         if (null == httpClient) {
-            httpClient=OkHttp3Utils.getOkHttpClient(baseUrl);
+            httpClient=OkHttp3Utils.getOkHttpClient();
         }
         retrofit=new Retrofit.Builder()
                 .baseUrl(baseUrl)

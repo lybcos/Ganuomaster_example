@@ -3,89 +3,180 @@ package com.example.administrator.ganuo_master_example.data.retrofit;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.util.Log;
 
 import com.example.administrator.ganuo_master_example.MyApplication;
 
+import java.io.File;
 import java.io.IOException;
+import java.net.InetAddress;
+import java.net.NetworkInterface;
+import java.net.SocketException;
+import java.util.Enumeration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+
+import okhttp3.Cache;
 import okhttp3.CacheControl;
+import okhttp3.Cookie;
+import okhttp3.CookieJar;
+import okhttp3.HttpUrl;
 import okhttp3.Interceptor;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
 import okhttp3.Response;
 import okhttp3.logging.HttpLoggingInterceptor;
 
-/**
- * Created by Administrator on 2018/2/21.
+/*
+ * okHttp的配置
+ * 缓存已经添加  目前只支持GET请求的缓存  POST的我在找合适的处理方法
+ * 也可根据自己的需要进行相关的修改
  */
-
 public class OkHttp3Utils {
-    private static OkHttpClient okHttpClient;
+
+    private static OkHttpClient mOkHttpClient;
+
+    //设置缓存目录
+    private static File cacheDirectory = new File(MyApplication.getInstance().getApplicationContext().getExternalCacheDir(), "MyCache");
+    private static Cache cache = new Cache(cacheDirectory, 100 * 1024 * 1024);
+
 
     /**
      * 获取OkHttpClient对象
      */
-    protected static OkHttpClient getOkHttpClient(String baseUrl){
-        if (null == okHttpClient) {
-            okHttpClient=new OkHttpClient.Builder()
+    public static OkHttpClient getOkHttpClient() {
+
+        if (null == mOkHttpClient) {
+
+            //同样okhttp3后也使用build设计模式
+            mOkHttpClient = new OkHttpClient.Builder()
+                    //设置一个自动管理cookies的管理器
+//                    .cookieJar(new CookiesManager())
+                    //添加拦截器
+                    .addInterceptor(mTokenInterceptor)
                     .addNetworkInterceptor(TestInterceptor)
-                    .addNetworkInterceptor(new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                    .addNetworkInterceptor(
+                            new HttpLoggingInterceptor().setLevel(HttpLoggingInterceptor.Level.BODY))
+                    .addInterceptor(TestInterceptor)
+                    //添加网络连接器
+//                    .addNetworkInterceptor(new CookiesInterceptor(MyApplication.getInstance().getApplicationContext()))
+                    //设置请求读写的超时时间
+                    .connectTimeout(10, TimeUnit.SECONDS)
                     .writeTimeout(10, TimeUnit.SECONDS)
-                    .readTimeout(10,TimeUnit.SECONDS)
-                    .connectTimeout(10,TimeUnit.SECONDS)
+                    .readTimeout(10, TimeUnit.SECONDS)
+                    .cache(cache)
                     .build();
+
         }
-        return okHttpClient;
+
+        return mOkHttpClient;
     }
+
     /**
      * 云端响应头拦截器，用来配置缓存策略
      * Dangerous interceptor that rewrites the server's cache-control header.
      */
-    private static  final Interceptor TestInterceptor=new Interceptor() {
+    private static final Interceptor TestInterceptor = new Interceptor() {
         @Override
         public Response intercept(Chain chain) throws IOException {
-            Request request=chain.request();
-            //这里就是说判读我们的网络条件，要是有网络的话我么就直接获取网络上面的数据，要是没有网络的话我么就去缓存里面取数据
-            if (!isNeetWorkReachable(MyApplication.getInstance()
-                    .getApplicationContext())){
-    //这个的话内容有点多啊，大家记住这么写就是只从缓存取，想要了解这个东西我等下再
-   // 给大家写连接吧。大家可以去看下，获取大家去找拦截器资料的时候就可以看到这个方面的东西反正也就是缓存策略。
-                request=request.newBuilder()
+            Request request = chain.request();
+            if (!isNetworkReachable(MyApplication.getInstance().getApplicationContext())) {
+                request = request.newBuilder()
                         .cacheControl(CacheControl.FORCE_CACHE)
                         .build();
             }
-            Response response=chain.proceed(request);
-            if (!isNeetWorkReachable(MyApplication.getInstance().getApplicationContext())){
-                String cacheControl=request.cacheControl().toString();
-                return response.newBuilder()
-                        .header("Cache-Control",cacheControl)
+            Response originalResponse = chain.proceed(request);
+            if (isNetworkReachable(MyApplication.getInstance().getApplicationContext())) {
+                //有网的时候读接口上的@Headers里的配置，你可以在这里进行统一的设置
+                String cacheControl = request.cacheControl().toString();
+                return originalResponse.newBuilder()
+                        .header("Cache-Control", cacheControl)
                         .removeHeader("Pragma")
                         .build();
-            }else {
-                int maxStale=60*60*24*365;//无网络时间
-                //这里的设置的是我们的没有网络的缓存时间，想设置多少就是多少。
-                return response.newBuilder().
-                        header("Cache-Control","public, only-if-cached, max-stale=" + maxStale)
+            } else {
+                int maxStale = 60 * 60 * 24 * 365; // 无网络时间
+                return originalResponse.newBuilder()
+                        .header("Cache-Control", "public, only-if-cached, max-stale=" + maxStale)
                         .removeHeader("Pragma")
                         .build();
             }
         }
-
     };
+    /**
+     * 云端响应头拦截器
+     * 用于添加统一请求头  请按照自己的需求添加
+     */
+    private static final Interceptor mTokenInterceptor = new Interceptor() {
+        @Override
+        public Response intercept(Chain chain) throws IOException {
+            Request originalRequest = chain.request();
+            Request authorised = originalRequest.newBuilder()
+//                    .header("YouzyApp_Sign", sysUtil.youzySing())
+                    .header("YouzyApp_FromSource", "android-2.65")
+                    .header("YouzyApp_IP", getLocalIpAddress())
+                    .header("Content-Type", "application/json; charset=utf-8")
+                    .build();
+            return chain.proceed(authorised);
+        }
+    };
+
+
+//    /**
+//     * 自动管理Cookies
+//     */
+//    private static class CookiesManager implements CookieJar {
+//        private final PersistentCookieStore cookieStore = new PersistentCookieStore(MyApplication.getInstance().getApplicationContext());
+//
+//        @Override
+//        public void saveFromResponse(HttpUrl url, List<Cookie> cookies) {
+//            if (cookies != null && cookies.size() > 0) {
+//                for (Cookie item : cookies) {
+//                    cookieStore.add(url, item);
+//                }
+//            }
+//        }
+//
+//        @Override
+//        public List<Cookie> loadForRequest(HttpUrl url) {
+//            List<Cookie> cookies = cookieStore.get(url);
+//            return cookies;
+//        }
+//    }
 
     /**
      * 判断网络是否可用
      *
      * @param context Context对象
      */
-    public static Boolean isNeetWorkReachable(Context context) {
-        ConnectivityManager cm = (ConnectivityManager)
-                context.getSystemService(Context.CONNECTIVITY_SERVICE);
-        NetworkInfo current=cm.getActiveNetworkInfo();
+    public static Boolean isNetworkReachable(Context context) {
+        ConnectivityManager cm = (ConnectivityManager) context
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo current = cm.getActiveNetworkInfo();
         if (current == null) {
             return false;
         }
         return (current.isAvailable());
+    }
+
+    /*
+     *获取设备IP地址
+     */
+    public static String getLocalIpAddress() {
+        try {
+            for (Enumeration<NetworkInterface> en = NetworkInterface.getNetworkInterfaces(); en.hasMoreElements(); ) {
+                NetworkInterface intf = en.nextElement();
+                for (Enumeration<InetAddress> enumIpAddr = intf.getInetAddresses(); enumIpAddr.hasMoreElements(); ) {
+                    InetAddress inetAddress = enumIpAddr.nextElement();
+                    //加上这个地址获取的一定是IPV4地址  不加的话 有可能是IPV6地址
+                    if (!inetAddress.isLoopbackAddress() && !inetAddress.isLinkLocalAddress()) {
+                        return inetAddress.getHostAddress().toString();
+                    }
+                }
+            }
+        } catch (SocketException ex) {
+            Log.e("VOLLEY", ex.toString());
+        }
+        return "127.0.0.1(error)";
     }
 }

@@ -29,7 +29,7 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
         initView();
         ButterKnife.bind(this);
         initdata();
-//        MyApplication.getInstance().addActivity(this);
+        MyApplication.getInstance().addActivity(this);
     }
 
     /**
@@ -67,7 +67,7 @@ public abstract class BaseActivity extends AppCompatActivity implements View.OnC
     protected void onDestroy() {
         // TODO Auto-generated method stub
         super.onDestroy();
-//        MyApplication.getInstance().finishActivity(this);
+        MyApplication.getInstance().finishActivity(this);
     }
 
     /**
